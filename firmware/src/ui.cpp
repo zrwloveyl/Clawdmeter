@@ -15,6 +15,7 @@ LV_FONT_DECLARE(font_styrene_20);
 LV_FONT_DECLARE(font_styrene_16);
 LV_FONT_DECLARE(font_styrene_14);
 LV_FONT_DECLARE(font_mono_32);
+LV_FONT_DECLARE(font_mono_18);   // 窄屏(LCD-1.47)状态行用小字，避免 "Connected" 超出屏宽
 
 // Layout values computed from the active board's geometry. Populated once
 // in ui_init() and treated as const for the rest of the program. Adding a
@@ -286,8 +287,9 @@ static lv_obj_t* make_pill(lv_obj_t* parent, const char* text) {
     lv_obj_set_style_bg_color(lbl, COL_BAR_BG, 0);
     lv_obj_set_style_bg_opa(lbl, LV_OPA_COVER, 0);
     lv_obj_set_style_radius(lbl, LV_RADIUS_CIRCLE, 0);
-    lv_obj_set_style_pad_left(lbl, 18, 0);
-    lv_obj_set_style_pad_right(lbl, 18, 0);
+    int php = board_caps().width <= 200 ? 8 : 18;  // 窄屏减小左右内边距，避免 pill 盖住百分比数字
+    lv_obj_set_style_pad_left(lbl, php, 0);
+    lv_obj_set_style_pad_right(lbl, php, 0);
     lv_obj_set_style_pad_top(lbl, 6, 0);
     lv_obj_set_style_pad_bottom(lbl, 6, 0);
     return lbl;
@@ -399,7 +401,7 @@ static void init_usage_screen(lv_obj_t* scr) {
     // Status line — always visible on the usage view. Driven by ui_tick_anim().
     lbl_anim = lv_label_create(usage_container);
     lv_label_set_text(lbl_anim, "");
-    lv_obj_set_style_text_font(lbl_anim, &font_mono_32, 0);
+    lv_obj_set_style_text_font(lbl_anim, board_caps().width <= 200 ? &font_mono_18 : &font_mono_32, 0);
     lv_obj_set_style_text_color(lbl_anim, COL_ACCENT, 0);
     lv_obj_align(lbl_anim, LV_ALIGN_BOTTOM_MID, 0, -15);
 }
@@ -513,8 +515,11 @@ void ui_show_screen(screen_t screen) {
     }
 
     if (logo_img) {
-        if (screen == SCREEN_SPLASH) lv_obj_add_flag(logo_img, LV_OBJ_FLAG_HIDDEN);
-        else                          lv_obj_clear_flag(logo_img, LV_OBJ_FLAG_HIDDEN);
+        // 窄屏(LCD-1.47)也隐藏 logo：80px logo 会盖住居中标题。其它板照常 splash 隐藏/否则显示。
+        if (screen == SCREEN_SPLASH || board_caps().width <= 200)
+            lv_obj_add_flag(logo_img, LV_OBJ_FLAG_HIDDEN);
+        else
+            lv_obj_clear_flag(logo_img, LV_OBJ_FLAG_HIDDEN);
     }
 
     if (screen != SCREEN_SPLASH) prev_non_splash_screen = screen;
