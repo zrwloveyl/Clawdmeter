@@ -20,8 +20,8 @@ void display_hal_init(void) {
     // Arduino_ST7789(bus, rst, rotation, IPS, w, h, col_off1, row_off1, col_off2, row_off2)
     // rotation=1：USB-A 横插，逻辑横屏 320x172。构造传物理面板尺寸 PANEL_W×PANEL_H，
     // Arduino_GFX 内部按 rotation 映射坐标。列偏移是物理 172 宽方向的居中偏移。
-    // 若旋转方向反了（上下颠倒），把 1 改成 3。
-    gfx = new Arduino_ST7789(bus, LCD_RST, 1 /*rotation 90, USB横插*/, true /*IPS*/,
+    // USB横插实测方向需再转 180°：rotation 1 -> 3（3 = 90+180）。
+    gfx = new Arduino_ST7789(bus, LCD_RST, 3 /*rotation 270, USB横插转180*/, true /*IPS*/,
                              PANEL_W, PANEL_H,
                              LCD_COL_OFFSET, LCD_ROW_OFFSET,
                              LCD_COL_OFFSET, LCD_ROW_OFFSET);
