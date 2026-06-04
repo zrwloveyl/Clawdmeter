@@ -168,6 +168,10 @@ static void send_screenshot() {
 //   等价数据入口，改 payload 字段处理时两处都要看。
 static void handle_serial_line(const char* line) {
     if (strcmp(line, "screenshot") == 0) { send_screenshot(); return; }
+    // 串口切页命令：本板(LCD-1.47)无触摸，除 BOOT 假触摸(touch.cpp)外，再给串口控制，
+    // 便于主机侧切页/截图验证，也可供 sender 未来按状态切页。归属: ui_show_screen()。
+    if (strcmp(line, "scr usage") == 0)  { ui_show_screen(SCREEN_USAGE);  return; }
+    if (strcmp(line, "scr splash") == 0) { ui_show_screen(SCREEN_SPLASH); return; }
     if (line[0] == '{') {
         if (parse_json(line, &usage)) {
             usage_rate_sample(usage.session_pct);
