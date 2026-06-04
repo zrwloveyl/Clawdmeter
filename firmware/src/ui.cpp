@@ -241,6 +241,12 @@ static const char* const anim_messages[] = {
 };
 #define ANIM_MSG_COUNT (sizeof(anim_messages) / sizeof(anim_messages[0]))
 
+// LCD-1.47 横竖屏 min 维度都是 172（小屏），据此隐藏 logo、缩小 pill 内距等。
+// 注意：不能只判 width<=200——横屏 width=320 会漏，故同时判 height<=200。
+static bool is_small_lcd() {
+    return board_caps().width <= 200 || board_caps().height <= 200;
+}
+
 static lv_color_t pct_color(float pct) {
     if (pct >= 80.0f) return COL_RED;
     if (pct >= 50.0f) return COL_AMBER;
@@ -311,7 +317,7 @@ static lv_obj_t* make_pill(lv_obj_t* parent, const char* text) {
     lv_obj_set_style_bg_color(lbl, COL_BAR_BG, 0);
     lv_obj_set_style_bg_opa(lbl, LV_OPA_COVER, 0);
     lv_obj_set_style_radius(lbl, LV_RADIUS_CIRCLE, 0);
-    int php = board_caps().width <= 200 ? 8 : 18;  // 窄屏减小左右内边距，避免 pill 盖住百分比数字
+    int php = is_small_lcd() ? 8 : 18;  // 小屏减小左右内边距，避免 pill 盖住百分比数字
     lv_obj_set_style_pad_left(lbl, php, 0);
     lv_obj_set_style_pad_right(lbl, php, 0);
     lv_obj_set_style_pad_top(lbl, 6, 0);
@@ -553,8 +559,8 @@ void ui_show_screen(screen_t screen) {
     }
 
     if (logo_img) {
-        // 窄屏(LCD-1.47)也隐藏 logo：80px logo 会盖住居中标题。其它板照常 splash 隐藏/否则显示。
-        if (screen == SCREEN_SPLASH || board_caps().width <= 200)
+        // 小屏(LCD-1.47)也隐藏 logo：80px logo 会盖住标题/面板。其它板照常 splash 隐藏/否则显示。
+        if (screen == SCREEN_SPLASH || is_small_lcd())
             lv_obj_add_flag(logo_img, LV_OBJ_FLAG_HIDDEN);
         else
             lv_obj_clear_flag(logo_img, LV_OBJ_FLAG_HIDDEN);
