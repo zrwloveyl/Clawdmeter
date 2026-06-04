@@ -54,7 +54,25 @@ static void compute_layout(const BoardCaps& c) {
     L.margin = 20;
     L.title_y = 30;
 
-    if (c.height >= 460) {
+    if (c.width <= 200) {
+        // 微雪 LCD-1.47 窄屏 172x320 专属断点（其它板都 >=368 宽，故用 width<=200 区分）。
+        // 字体/尺寸压缩以适配 172 宽。注意：usage 面板内字号目前在下方 screen-builder
+        // 里硬编码(styrene_48/tiempos_56)，点亮后按截图在 Phase G 再参数化微调。
+        L.margin = 10;
+        L.title_y = 8;
+        L.content_y = 68;
+        L.usage_panel_h = 104;
+        L.usage_panel_gap = 10;
+        L.usage_bar_y = 44;
+        L.usage_reset_y = 72;
+        L.bt_info_panel_h = 120;
+        L.bt_reset_zone_h = 80;
+        L.bt_title_font    = &font_tiempos_34;
+        L.bt_status_font   = &font_styrene_28;
+        L.bt_device_font   = &font_styrene_16;
+        L.bt_credit_1_font = &font_styrene_14;
+        L.bt_credit_2_font = &font_styrene_14;
+    } else if (c.height >= 460) {
         // Large layout — tuned for 480x480 (AMOLED-2.16).
         L.content_y = 100;
         L.usage_panel_h = 150;

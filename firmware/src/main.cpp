@@ -116,7 +116,9 @@ static bool parse_json(const char* json, UsageData* out) {
 }
 
 // ---- Serial command buffer ----
-#define CMD_BUF_SIZE 64
+// 增大到 256：原 64 仅够 "screenshot" 命令字，放不下本板的用量 JSON 行
+// ({"s":..,"sr":..,"w":..,"wr":..,"st":"allowed","ok":true} 约 55+ 字节)。
+#define CMD_BUF_SIZE 256
 static char cmd_buf[CMD_BUF_SIZE];
 static int cmd_pos = 0;
 
@@ -158,12 +160,30 @@ static void send_screenshot() {
 #endif
 }
 
+// 处理一条完整串口行：内置 screenshot 命令，或本板(LCD-1.47)专用的 '{...}' 用量 JSON。
+// 数据来源：Pi0 的 claude-clawd-sender.py（读 ~/.cache/claude-usage.json 发串口）。
+// 为什么收到 JSON 要伪造 CONNECTED：ui.cpp 的用量面板只在 s_ble_connected 时显示，
+//   本板数据走 USB 串口不走 BLE，有效 JSON 进来即调 ui_update_ble_status(CONNECTED)，
+//   否则屏上永远停在 "To pair"。归属：本分支与 loop 末尾的 ble_has_data() 分支是两条
+//   等价数据入口，改 payload 字段处理时两处都要看。
+static void handle_serial_line(const char* line) {
+    if (strcmp(line, "screenshot") == 0) { send_screenshot(); return; }
+    if (line[0] == '{') {
+        if (parse_json(line, &usage)) {
+            usage_rate_sample(usage.session_pct);
+            if (splash_is_active()) splash_pick_for_current_rate();
+            ui_update(&usage);
+            ui_update_ble_status(BLE_STATE_CONNECTED, "Serial", "");
+        }
+    }
+}
+
 static void check_serial_cmd() {
     while (Serial.available()) {
         char c = Serial.read();
         if (c == '\n' || c == '\r') {
             cmd_buf[cmd_pos] = '\0';
-            if (strcmp(cmd_buf, "screenshot") == 0) send_screenshot();
+            if (cmd_pos > 0) handle_serial_line(cmd_buf);
             cmd_pos = 0;
         } else if (cmd_pos < CMD_BUF_SIZE - 1) {
             cmd_buf[cmd_pos++] = c;

@@ -1,0 +1,29 @@
+name: Build LCD 1.47
+
+# 云端编译微雪 ESP32-S3-LCD-1.47 固件（铁律：禁止本地编译，一律 GitHub Actions）。
+# 产物 firmware.bin 是纯 app，烧到 app1=0x310000（不动 app0）。
+on:
+  push:
+    paths:
+      - 'firmware/**'
+      - '.github/workflows/build-lcd147.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install PlatformIO
+        run: pip install --upgrade platformio
+      - name: Build waveshare_lcd_147
+        run: pio run -d firmware -e waveshare_lcd_147
+      - name: Show firmware size (须 < 0x300000 = 3MB 才能放进 app1)
+        run: ls -l firmware/.pio/build/waveshare_lcd_147/firmware.bin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware-lcd147
+          path: firmware/.pio/build/waveshare_lcd_147/firmware.bin
