@@ -23,6 +23,7 @@ LV_FONT_DECLARE(font_mono_18);   // 窄屏(LCD-1.47)状态行用小字，避免 
 // breakpoint — never editing the screen-builder functions below.
 struct Layout {
     int16_t scr_w, scr_h;
+    bool two_col;            // 横屏(320x172)两个 usage 面板横向并排；竖屏纵向堆叠
     int16_t margin;
     int16_t title_y;
     int16_t content_y;
@@ -59,11 +60,34 @@ static Layout L = {};
 static void compute_layout(const BoardCaps& c) {
     L.scr_w = c.width;
     L.scr_h = c.height;
+    L.two_col = false;       // 默认纵排；横屏分支置 true
     L.margin = 20;
     L.title_y = 30;
 
-    if (c.width <= 200) {
-        // 微雪 LCD-1.47 窄屏 172x320 专属断点（其它板都 >=368 宽，故用 width<=200 区分）。
+    if (c.height <= 200) {
+        // 微雪 LCD-1.47 横屏 320x172（USB-A 横插，display rotation=1）。
+        // 两个 usage 面板横向并排（宽矮屏），底部留 whimsical 状态行。
+        L.two_col = true;
+        L.margin = 8;
+        L.title_y = 5;
+        L.content_y = 42;
+        L.usage_panel_h = 100;
+        L.usage_panel_gap = 8;
+        L.usage_bar_y = 46;
+        L.usage_reset_y = 70;
+        L.bt_info_panel_h = 100;
+        L.bt_reset_zone_h = 60;
+        L.bt_title_font    = &font_tiempos_34;
+        L.bt_status_font   = &font_styrene_28;
+        L.bt_device_font   = &font_styrene_16;
+        L.bt_credit_1_font = &font_styrene_14;
+        L.bt_credit_2_font = &font_styrene_14;
+        L.title_font       = &font_tiempos_34;
+        L.usage_pct_font   = &font_styrene_28;
+        L.usage_pill_font  = &font_styrene_16;
+        L.usage_reset_font = &font_styrene_16;
+    } else if (c.width <= 200) {
+        // 微雪 LCD-1.47 竖屏 172x320 断点（旋转前/备用；其它板都 >=368 宽）。
         // 字体/尺寸压缩以适配 172 宽。注意：usage 面板内字号目前在下方 screen-builder
         // 里硬编码(styrene_48/tiempos_56)，点亮后按截图在 Phase G 再参数化微调。
         L.margin = 10;
@@ -305,10 +329,10 @@ static void init_battery_icons(void) {
 
 // ======== Usage Screen ========
 
-static void make_usage_panel(lv_obj_t* parent, int y, const char* pill_text,
+static void make_usage_panel(lv_obj_t* parent, int x, int y, int w, const char* pill_text,
                              lv_obj_t** out_pct, lv_obj_t** out_pill,
                              lv_obj_t** out_bar, lv_obj_t** out_reset) {
-    lv_obj_t* panel = make_panel(parent, L.margin, y, L.content_w, L.usage_panel_h);
+    lv_obj_t* panel = make_panel(parent, x, y, w, L.usage_panel_h);
 
     *out_pct = lv_label_create(panel);
     lv_label_set_text(*out_pct, "---%");
@@ -319,7 +343,7 @@ static void make_usage_panel(lv_obj_t* parent, int y, const char* pill_text,
     *out_pill = make_pill(panel, pill_text);
     lv_obj_align(*out_pill, LV_ALIGN_TOP_RIGHT, 0, 1);
 
-    *out_bar = make_bar(panel, 0, L.usage_bar_y, L.content_w - 32, 24);
+    *out_bar = make_bar(panel, 0, L.usage_bar_y, w - 32, 24);
 
     *out_reset = lv_label_create(panel);
     lv_label_set_text(*out_reset, "---");
@@ -388,13 +412,24 @@ static void init_usage_screen(lv_obj_t* scr) {
     lv_obj_clear_flag(usage_group, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_add_flag(usage_group, LV_OBJ_FLAG_EVENT_BUBBLE);
 
-    make_usage_panel(usage_group, L.content_y, "Current",
-                     &lbl_session_pct, &lbl_session_label,
-                     &bar_session, &lbl_session_reset);
-    make_usage_panel(usage_group,
-                     L.content_y + L.usage_panel_h + L.usage_panel_gap, "Weekly",
-                     &lbl_weekly_pct, &lbl_weekly_label,
-                     &bar_weekly, &lbl_weekly_reset);
+    if (L.two_col) {
+        // 横屏：Current / Weekly 左右并排
+        int half = (L.content_w - L.usage_panel_gap) / 2;
+        make_usage_panel(usage_group, L.margin, L.content_y, half, "Current",
+                         &lbl_session_pct, &lbl_session_label,
+                         &bar_session, &lbl_session_reset);
+        make_usage_panel(usage_group, L.margin + half + L.usage_panel_gap, L.content_y, half, "Weekly",
+                         &lbl_weekly_pct, &lbl_weekly_label,
+                         &bar_weekly, &lbl_weekly_reset);
+    } else {
+        // 竖屏：上下堆叠
+        make_usage_panel(usage_group, L.margin, L.content_y, L.content_w, "Current",
+                         &lbl_session_pct, &lbl_session_label,
+                         &bar_session, &lbl_session_reset);
+        make_usage_panel(usage_group, L.margin, L.content_y + L.usage_panel_h + L.usage_panel_gap, L.content_w, "Weekly",
+                         &lbl_weekly_pct, &lbl_weekly_label,
+                         &bar_weekly, &lbl_weekly_reset);
+    }
 
     build_pair_group(usage_container);
 

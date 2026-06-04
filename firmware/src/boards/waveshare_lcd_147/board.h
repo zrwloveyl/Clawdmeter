@@ -6,9 +6,14 @@
 
 #define BOARD_NAME           "Waveshare LCD 1.47"
 
-// ---- Display geometry (portrait) ----
-#define LCD_WIDTH            172
-#define LCD_HEIGHT           320
+// ---- Display geometry ----
+// 物理面板 ST7789 固有 172x320（竖）。本板 USB-A 横插，display.cpp 用 rotation=1 旋转 90°，
+// 逻辑显示为横屏 320x172（LVGL/UI/caps 全部用逻辑尺寸 LCD_WIDTH/HEIGHT）。
+// 改朝向：改 display.cpp 的 rotation（1/3 对应两个横向）+ 此处 LCD_WIDTH/HEIGHT 互换。
+#define PANEL_W              172   // 物理面板宽（送给 Arduino_ST7789 构造）
+#define PANEL_H              320   // 物理面板高
+#define LCD_WIDTH            320   // 逻辑（旋转后）宽
+#define LCD_HEIGHT           172   // 逻辑（旋转后）高
 
 // ---- ST7789 4 线 SPI 引脚（非 QSPI；来源 skill/wiki）----
 #define LCD_MOSI             45
