@@ -41,6 +41,13 @@ struct Layout {
     const lv_font_t* bt_device_font;
     const lv_font_t* bt_credit_1_font;
     const lv_font_t* bt_credit_2_font;
+
+    // Usage/标题字体（参数化）：原先在 screen-builder 里硬编码 styrene_48/tiempos_56，
+    // 窄屏(LCD-1.47 172宽)会溢出/被裁。改为按断点取值，screen-builder 统一读这些字段。
+    const lv_font_t* title_font;
+    const lv_font_t* usage_pct_font;
+    const lv_font_t* usage_pill_font;
+    const lv_font_t* usage_reset_font;
 };
 static Layout L = {};
 
@@ -72,6 +79,10 @@ static void compute_layout(const BoardCaps& c) {
         L.bt_device_font   = &font_styrene_16;
         L.bt_credit_1_font = &font_styrene_14;
         L.bt_credit_2_font = &font_styrene_14;
+        L.title_font       = &font_tiempos_34;   // 172 宽用小标题，避免与 logo 重叠
+        L.usage_pct_font   = &font_styrene_28;
+        L.usage_pill_font  = &font_styrene_16;
+        L.usage_reset_font = &font_styrene_16;    // reset 行用小字，避免被面板裁掉
     } else if (c.height >= 460) {
         // Large layout — tuned for 480x480 (AMOLED-2.16).
         L.content_y = 100;
@@ -86,6 +97,10 @@ static void compute_layout(const BoardCaps& c) {
         L.bt_device_font   = &font_styrene_28;
         L.bt_credit_1_font = &font_styrene_24;
         L.bt_credit_2_font = &font_styrene_20;
+        L.title_font       = &font_tiempos_56;   // 大屏保持原字号
+        L.usage_pct_font   = &font_styrene_48;
+        L.usage_pill_font  = &font_styrene_28;
+        L.usage_reset_font = &font_styrene_28;
     } else {
         // Compact layout — tuned for 368x448 (AMOLED-1.8).
         L.content_y = 85;
@@ -100,6 +115,10 @@ static void compute_layout(const BoardCaps& c) {
         L.bt_device_font   = &font_styrene_20;
         L.bt_credit_1_font = &font_styrene_16;
         L.bt_credit_2_font = &font_styrene_14;
+        L.title_font       = &font_tiempos_56;   // compact(368宽)保持原字号
+        L.usage_pct_font   = &font_styrene_48;
+        L.usage_pill_font  = &font_styrene_28;
+        L.usage_reset_font = &font_styrene_28;
     }
 
     L.content_w = L.scr_w - 2 * L.margin;
@@ -262,7 +281,7 @@ static void init_icon_dsc_rgb565a8(lv_image_dsc_t* dsc, int w, int h, const uint
 static lv_obj_t* make_pill(lv_obj_t* parent, const char* text) {
     lv_obj_t* lbl = lv_label_create(parent);
     lv_label_set_text(lbl, text);
-    lv_obj_set_style_text_font(lbl, &font_styrene_28, 0);
+    lv_obj_set_style_text_font(lbl, L.usage_pill_font, 0);
     lv_obj_set_style_text_color(lbl, COL_TEXT, 0);
     lv_obj_set_style_bg_color(lbl, COL_BAR_BG, 0);
     lv_obj_set_style_bg_opa(lbl, LV_OPA_COVER, 0);
@@ -291,7 +310,7 @@ static void make_usage_panel(lv_obj_t* parent, int y, const char* pill_text,
 
     *out_pct = lv_label_create(panel);
     lv_label_set_text(*out_pct, "---%");
-    lv_obj_set_style_text_font(*out_pct, &font_styrene_48, 0);
+    lv_obj_set_style_text_font(*out_pct, L.usage_pct_font, 0);
     lv_obj_set_style_text_color(*out_pct, COL_TEXT, 0);
     lv_obj_set_pos(*out_pct, 0, 0);
 
@@ -302,7 +321,7 @@ static void make_usage_panel(lv_obj_t* parent, int y, const char* pill_text,
 
     *out_reset = lv_label_create(panel);
     lv_label_set_text(*out_reset, "---");
-    lv_obj_set_style_text_font(*out_reset, &font_styrene_28, 0);
+    lv_obj_set_style_text_font(*out_reset, L.usage_reset_font, 0);
     lv_obj_set_style_text_color(*out_reset, COL_DIM, 0);
     lv_obj_set_pos(*out_reset, 0, L.usage_reset_y);
 }
@@ -352,7 +371,7 @@ static void init_usage_screen(lv_obj_t* scr) {
 
     lbl_title = lv_label_create(usage_container);
     lv_label_set_text(lbl_title, "Usage");
-    lv_obj_set_style_text_font(lbl_title, &font_tiempos_56, 0);
+    lv_obj_set_style_text_font(lbl_title, L.title_font, 0);
     lv_obj_set_style_text_color(lbl_title, COL_TEXT, 0);
     lv_obj_align(lbl_title, LV_ALIGN_TOP_MID, 16, L.title_y);
 
@@ -407,6 +426,8 @@ void ui_init(void) {
     logo_img = lv_image_create(scr);
     lv_image_set_src(logo_img, &logo_dsc);
     lv_obj_set_pos(logo_img, L.margin, L.title_y - 10);
+    // 窄屏(LCD-1.47 172宽)：80px logo 会盖住居中标题，隐藏之（其它板照常显示）。
+    if (board_caps().width <= 200) lv_obj_add_flag(logo_img, LV_OBJ_FLAG_HIDDEN);
 
     battery_img = lv_image_create(scr);
     lv_image_set_src(battery_img, &battery_dscs[0]);
