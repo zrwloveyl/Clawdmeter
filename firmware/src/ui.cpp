@@ -494,8 +494,11 @@ void ui_tick_anim(void) {
 static screen_t prev_non_splash_screen = SCREEN_USAGE;
 static void apply_battery_visibility(void) {
     if (!battery_img) return;
-    if (current_screen == SCREEN_SPLASH) lv_obj_add_flag(battery_img, LV_OBJ_FLAG_HIDDEN);
-    else                                  lv_obj_clear_flag(battery_img, LV_OBJ_FLAG_HIDDEN);
+    // 无电池板(如 LCD-1.47, has_battery=false)始终隐藏电池图标，避免右上角空图标残留。
+    if (current_screen == SCREEN_SPLASH || !board_caps().has_battery)
+        lv_obj_add_flag(battery_img, LV_OBJ_FLAG_HIDDEN);
+    else
+        lv_obj_clear_flag(battery_img, LV_OBJ_FLAG_HIDDEN);
 }
 
 static void global_click_cb(lv_event_t* e) {
