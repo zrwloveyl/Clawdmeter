@@ -13,7 +13,9 @@ void power_hal_tick(void) {}
 
 int  power_hal_battery_pct(void) { return -1; }
 bool power_hal_is_charging(void) { return false; }
-bool power_hal_is_vbus_in(void)  { return false; }
+// 本板 USB-A 直插恒供电。返回 true 让 idle（IDLE_SLEEP_WHEN_CHARGING=false）认为一直插电，
+// 永不息屏=屏幕常亮。若以后想让它能息屏，把这里改回 false 或改 idle_cfg.h 的 IDLE_TIMEOUT_MS。
+bool power_hal_is_vbus_in(void)  { return true; }
 bool power_hal_pwr_pressed(void) { return false; }
 bool power_hal_pwr_long_pressed(void) { return false; }
 bool power_hal_pwr_released(void) { return false; }
