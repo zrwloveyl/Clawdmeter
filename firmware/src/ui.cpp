@@ -14,6 +14,7 @@ LV_FONT_DECLARE(font_styrene_24);
 LV_FONT_DECLARE(font_styrene_20);
 LV_FONT_DECLARE(font_styrene_16);
 LV_FONT_DECLARE(font_styrene_14);
+LV_FONT_DECLARE(font_styrene_12);   // 横屏 usage 用更小字，"100%" 并排也放得下
 LV_FONT_DECLARE(font_mono_32);
 LV_FONT_DECLARE(font_mono_18);   // 窄屏(LCD-1.47)状态行用小字，避免 "Connected" 超出屏宽
 
@@ -83,9 +84,9 @@ static void compute_layout(const BoardCaps& c) {
         L.bt_credit_1_font = &font_styrene_14;
         L.bt_credit_2_font = &font_styrene_14;
         L.title_font       = &font_tiempos_34;
-        L.usage_pct_font   = &font_styrene_24;
-        L.usage_pill_font  = &font_styrene_14;
-        L.usage_reset_font = &font_styrene_14;
+        L.usage_pct_font   = &font_styrene_20;
+        L.usage_pill_font  = &font_styrene_12;
+        L.usage_reset_font = &font_styrene_12;
     } else if (c.width <= 200) {
         // 微雪 LCD-1.47 竖屏 172x320 断点（旋转前/备用；其它板都 >=368 宽）。
         // 字体/尺寸压缩以适配 172 宽。注意：usage 面板内字号目前在下方 screen-builder

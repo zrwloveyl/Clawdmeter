@@ -44,6 +44,10 @@ static int8_t  group_lists[GROUP_COUNT][GROUP_MAX];
 static uint8_t group_size[GROUP_COUNT] = {0};
 static uint8_t group_rotation[GROUP_COUNT] = {0};
 
+// Claude 工作状态专属动画（准确、固定不轮换）：0=Idle→呼吸, 1=Thinking→思考, 2=调工具→编码。
+static const char* ACT_ANIM_NAMES[3] = { "idle breathe", "work think", "work coding" };
+static int8_t act_anim[3] = { -1, -1, -1 };
+
 static const char* GROUP_NAMES[GROUP_COUNT][GROUP_MAX] = {
     // Group 0 — idle / sleepy
     { "expression sleep", "idle breathe", "idle blink", "expression wink" },
@@ -68,6 +72,13 @@ static void resolve_group_lists(void) {
                     break;
                 }
             }
+        }
+    }
+    // 解析工作状态专属动画 index（按名匹配）
+    for (int k = 0; k < 3; k++) {
+        act_anim[k] = -1;
+        for (int i = 0; i < SPLASH_ANIM_COUNT; i++) {
+            if (strcmp(splash_anims[i].name, ACT_ANIM_NAMES[k]) == 0) { act_anim[k] = (int8_t)i; break; }
         }
     }
 }
@@ -198,7 +209,17 @@ void splash_next(void) {
 
 void splash_pick_for_current_rate(void) {
     if (SPLASH_ANIM_COUNT == 0) return;
-    int g = (s_act_group >= 0) ? s_act_group : usage_rate_group();  // Claude 工作状态优先于用量速率
+    // 工作状态优先：用固定专属动画（准确，不在组内轮换）。
+    if (s_act_group >= 0 && s_act_group < 3 && act_anim[s_act_group] >= 0) {
+        cur_anim = (uint16_t)act_anim[s_act_group];
+        cur_frame = 0;
+        frame_started_ms = millis();
+        last_pick_ms = frame_started_ms;
+        const splash_anim_def_t *a = &splash_anims[cur_anim];
+        render_frame(a->frames[0], a->palette);
+        return;
+    }
+    int g = usage_rate_group();   // 无工作状态时回退用量速率
     if (g < 0 || g >= GROUP_COUNT) g = 0;
     if (group_size[g] == 0) return;
 
