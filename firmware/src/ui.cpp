@@ -185,6 +185,7 @@ static lv_image_dsc_t battery_dscs[5];  // empty, low, medium, full, charging
 static lv_image_dsc_t logo_dsc;
 static screen_t current_screen = SCREEN_USAGE;
 static bool     s_ble_connected = false;   // cached BLE connection state
+static char     s_activity[24] = "";       // Claude 实时工作状态(Bash/Edit/Thinking/Idle…)，ui_update 写
 static uint32_t connected_at_ms = 0;       // when we last entered CONNECTED ("Connected" dwell)
 
 // Animation state
@@ -497,6 +498,8 @@ void ui_update(const UsageData* data) {
 
     format_reset_time(data->weekly_reset_mins, buf, sizeof(buf));
     lv_label_set_text(lbl_weekly_reset, buf);
+
+    strlcpy(s_activity, data->activity, sizeof(s_activity));  // 缓存工作状态供底部状态行显示
 }
 
 void ui_tick_anim(void) {
@@ -517,12 +520,16 @@ void ui_tick_anim(void) {
 
     // Status text by priority. Whimsical messages only when connected & settled.
     const char* text;
-    if (!s_ble_connected) {
+    if (s_activity[0] && strcmp(s_activity, "Idle") != 0) {
+        text = s_activity;                       // Claude 在工作：实时显示 Bash/Edit/Thinking…
+    } else if (!s_ble_connected) {
         text = ble_has_bonds() ? "Disconnected" : "Pairing";
+    } else if (s_activity[0]) {
+        text = "Idle";                           // hook 明确报空闲
     } else if (now - connected_at_ms < 5000) {
         text = "Connected";
     } else {
-        text = anim_messages[anim_msg_idx];
+        text = anim_messages[anim_msg_idx];      // 无 activity 数据（如其它板）回退 whimsical 词
     }
 
     // All states share the whimsical style: "<glyph> <Title-case word>…"
