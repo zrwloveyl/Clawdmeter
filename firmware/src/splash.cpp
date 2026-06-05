@@ -234,10 +234,13 @@ void splash_pick_for_current_rate(void) {
     if (SPLASH_ANIM_COUNT == 0) return;
     // 工作状态优先：用 label 映射的固定专属动画（准确，不在组内轮换）。
     if (act_cur_idx >= 0) {
+        last_pick_ms = millis();
+        // 同一动画：不重置帧，让它连续播放。否则每次采样(2s)都跳回第0帧，
+        // 动画卡在开头几帧反复重来，看着像"不动/没动画"——这是之前的 bug。
+        if (cur_anim == (uint16_t)act_cur_idx) return;
         cur_anim = (uint16_t)act_cur_idx;
         cur_frame = 0;
         frame_started_ms = millis();
-        last_pick_ms = frame_started_ms;
         const splash_anim_def_t *a = &splash_anims[cur_anim];
         render_frame(a->frames[0], a->palette);
         return;
