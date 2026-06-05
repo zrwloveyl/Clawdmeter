@@ -162,7 +162,7 @@ static void send_screenshot() {
 }
 
 // 处理一条完整串口行：内置 screenshot 命令，或本板(LCD-1.47)专用的 '{...}' 用量 JSON。
-// 数据来源：Pi0 的 claude-clawd-sender.py（读 ~/.cache/claude-usage.json 发串口）。
+// 数据来源：host 上的 claude-clawd-sender.py（读 ~/.cache/claude-usage.json 发串口）。
 // 为什么收到 JSON 要伪造 CONNECTED：ui.cpp 的用量面板只在 s_ble_connected 时显示，
 //   本板数据走 USB 串口不走 BLE，有效 JSON 进来即调 ui_update_ble_status(CONNECTED)，
 //   否则屏上永远停在 "To pair"。归属：本分支与 loop 末尾的 ble_has_data() 分支是两条

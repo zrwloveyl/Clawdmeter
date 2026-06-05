@@ -2,7 +2,7 @@
 
 // Waveshare ESP32-S3-LCD-1.47 — USB-A dongle, 1.47" ST7789V 172x320 SPI LCD.
 // 与本项目其它板不同：这是普通 4 线 SPI TFT（非 QSPI AMOLED），无触摸/无 PMU/无 IMU。
-// 引脚来源：skill-esp32-s3-lcd-1.47（微雪官方 wiki）；列偏移待实测确认。
+// 引脚来源：Waveshare ESP32-S3-LCD-1.47 官方 wiki；列偏移待实测确认。
 
 #define BOARD_NAME           "Waveshare LCD 1.47"
 

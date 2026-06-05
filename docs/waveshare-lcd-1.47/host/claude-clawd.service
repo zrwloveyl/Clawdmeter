@@ -1,0 +1,16 @@
+[Unit]
+Description=Claude usage/activity sender for ESP32 Clawdmeter (LCD-1.47)
+After=network.target
+
+[Service]
+Type=simple
+# EDIT these two lines for your setup:
+#   User      = your login name
+#   ExecStart = absolute path to claude-clawd-sender.py
+User=youruser
+ExecStart=/usr/bin/python3 /home/youruser/clawdmeter/claude-clawd-sender.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
