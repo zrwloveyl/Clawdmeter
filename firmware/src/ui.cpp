@@ -73,8 +73,8 @@ static void compute_layout(const BoardCaps& c) {
         L.content_y = 42;
         L.usage_panel_h = 100;
         L.usage_panel_gap = 8;
-        L.usage_bar_y = 46;
-        L.usage_reset_y = 70;
+        L.usage_bar_y = 44;
+        L.usage_reset_y = 62;
         L.bt_info_panel_h = 100;
         L.bt_reset_zone_h = 60;
         L.bt_title_font    = &font_tiempos_34;
@@ -83,9 +83,9 @@ static void compute_layout(const BoardCaps& c) {
         L.bt_credit_1_font = &font_styrene_14;
         L.bt_credit_2_font = &font_styrene_14;
         L.title_font       = &font_tiempos_34;
-        L.usage_pct_font   = &font_styrene_28;
-        L.usage_pill_font  = &font_styrene_16;
-        L.usage_reset_font = &font_styrene_16;
+        L.usage_pct_font   = &font_styrene_24;
+        L.usage_pill_font  = &font_styrene_14;
+        L.usage_reset_font = &font_styrene_14;
     } else if (c.width <= 200) {
         // 微雪 LCD-1.47 竖屏 172x320 断点（旋转前/备用；其它板都 >=368 宽）。
         // 字体/尺寸压缩以适配 172 宽。注意：usage 面板内字号目前在下方 screen-builder
@@ -345,12 +345,20 @@ static void make_usage_panel(lv_obj_t* parent, int x, int y, int w, const char* 
     lv_label_set_text(*out_pct, "---%");
     lv_obj_set_style_text_font(*out_pct, L.usage_pct_font, 0);
     lv_obj_set_style_text_color(*out_pct, COL_TEXT, 0);
-    lv_obj_set_pos(*out_pct, 0, 0);
 
     *out_pill = make_pill(panel, pill_text);
-    lv_obj_align(*out_pill, LV_ALIGN_TOP_RIGHT, 0, 1);
+    if (L.two_col) {
+        // 窄屏：pill 小标签在顶左、大数字在其下垂直堆叠
+        // （并排会被 pill 盖住 "100%" 这种三位数，故改垂直）。
+        lv_obj_align(*out_pill, LV_ALIGN_TOP_LEFT, 0, 0);
+        lv_obj_set_pos(*out_pct, 0, 18);
+    } else {
+        // 宽屏（源码布局）：pct 左、pill 右上并排。
+        lv_obj_set_pos(*out_pct, 0, 0);
+        lv_obj_align(*out_pill, LV_ALIGN_TOP_RIGHT, 0, 1);
+    }
 
-    *out_bar = make_bar(panel, 0, L.usage_bar_y, w - 32, 24);
+    *out_bar = make_bar(panel, 0, L.usage_bar_y, w - 32, L.two_col ? 16 : 24);
 
     *out_reset = lv_label_create(panel);
     lv_label_set_text(*out_reset, "---");
