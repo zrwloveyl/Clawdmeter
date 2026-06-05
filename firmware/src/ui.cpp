@@ -73,8 +73,8 @@ static void compute_layout(const BoardCaps& c) {
         L.content_y = 42;
         L.usage_panel_h = 100;
         L.usage_panel_gap = 8;
-        L.usage_bar_y = 44;
-        L.usage_reset_y = 62;
+        L.usage_bar_y = 34;
+        L.usage_reset_y = 58;
         L.bt_info_panel_h = 100;
         L.bt_reset_zone_h = 60;
         L.bt_title_font    = &font_tiempos_34;
@@ -347,16 +347,8 @@ static void make_usage_panel(lv_obj_t* parent, int x, int y, int w, const char* 
     lv_obj_set_style_text_color(*out_pct, COL_TEXT, 0);
 
     *out_pill = make_pill(panel, pill_text);
-    if (L.two_col) {
-        // 窄屏：pill 小标签在顶左、大数字在其下垂直堆叠
-        // （并排会被 pill 盖住 "100%" 这种三位数，故改垂直）。
-        lv_obj_align(*out_pill, LV_ALIGN_TOP_LEFT, 0, 0);
-        lv_obj_set_pos(*out_pct, 0, 18);
-    } else {
-        // 宽屏（源码布局）：pct 左、pill 右上并排。
-        lv_obj_set_pos(*out_pct, 0, 0);
-        lv_obj_align(*out_pill, LV_ALIGN_TOP_RIGHT, 0, 1);
-    }
+    lv_obj_set_pos(*out_pct, 0, 0);                       // pct 大数字左上
+    lv_obj_align(*out_pill, LV_ALIGN_TOP_RIGHT, 0, 1);    // pill 标签右上（并排，靠小字体避免重叠）
 
     *out_bar = make_bar(panel, 0, L.usage_bar_y, w - 32, L.two_col ? 16 : 24);
 
