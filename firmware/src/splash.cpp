@@ -54,9 +54,9 @@ static const act_map_t ACT_MAP[] = {
     { "Write",        "work coding" },          // 写文件
     { "MultiEdit",    "work coding" },
     { "NotebookEdit", "work coding" },
-    { "Read",         "idle look around" },     // 读：东张西望
-    { "Grep",         "idle look around" },     // 搜索
-    { "Glob",         "idle look around" },
+    { "Read",         "work think" },           // 读取/理解：专注思考（look around 太像空闲）
+    { "Grep",         "work think" },           // 搜索
+    { "Glob",         "work think" },
     { "WebFetch",     "expression surprise" },  // 联网：惊讶
     { "WebSearch",    "expression surprise" },
     { "Task",         "dance bounce" },         // 派子任务：蹦跶
