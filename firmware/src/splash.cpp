@@ -30,7 +30,6 @@ static uint16_t cur_frame = 0;
 static uint32_t frame_started_ms = 0;
 static uint32_t last_pick_ms = 0;
 static bool active = false;
-static int  s_act_group = -1;   // >=0: 由 Claude 工作状态强制动画组(覆盖用量速率); -1: 回退用量速率
 
 // While splash is showing, auto-cycle to the next animation in the current
 // rate-driven group every this many ms.
@@ -44,9 +43,29 @@ static int8_t  group_lists[GROUP_COUNT][GROUP_MAX];
 static uint8_t group_size[GROUP_COUNT] = {0};
 static uint8_t group_rotation[GROUP_COUNT] = {0};
 
-// Claude 工作状态专属动画（准确、固定不轮换）：0=Idle→呼吸, 1=Thinking→思考, 2=调工具→编码。
-static const char* ACT_ANIM_NAMES[3] = { "idle breathe", "work think", "work coding" };
-static int8_t act_anim[3] = { -1, -1, -1 };
+// Claude 工作状态(label) → 专属动画 精确映射（更细+准确，固定不轮换）。
+// label 来自 CC hook（工具名 / Thinking / Idle）；未列出的工具回退 "work coding"(在干活)。
+struct act_map_t { const char* label; const char* anim; };
+static const act_map_t ACT_MAP[] = {
+    { "Idle",         "expression sleep" },     // 空闲：睡觉
+    { "Thinking",     "work think" },           // 思考
+    { "Bash",         "work coding" },          // 执行命令
+    { "Edit",         "work coding" },          // 改代码
+    { "Write",        "work coding" },          // 写文件
+    { "MultiEdit",    "work coding" },
+    { "NotebookEdit", "work coding" },
+    { "Read",         "idle look around" },     // 读：东张西望
+    { "Grep",         "idle look around" },     // 搜索
+    { "Glob",         "idle look around" },
+    { "WebFetch",     "expression surprise" },  // 联网：惊讶
+    { "WebSearch",    "expression surprise" },
+    { "Task",         "dance bounce" },         // 派子任务：蹦跶
+    { "TodoWrite",    "work think" },           // 规划
+};
+#define ACT_MAP_COUNT ((int)(sizeof(ACT_MAP) / sizeof(ACT_MAP[0])))
+static int8_t act_map_idx[ACT_MAP_COUNT];   // 每个 ACT_MAP 项解析出的动画 index
+static int8_t act_default_idx = -1;         // 未列出的工具回退 "work coding"
+static int8_t act_cur_idx = -1;             // 当前工作状态动画(-1: 回退用量速率)
 
 static const char* GROUP_NAMES[GROUP_COUNT][GROUP_MAX] = {
     // Group 0 — idle / sleepy
@@ -74,12 +93,16 @@ static void resolve_group_lists(void) {
             }
         }
     }
-    // 解析工作状态专属动画 index（按名匹配）
-    for (int k = 0; k < 3; k++) {
-        act_anim[k] = -1;
+    // 解析 ACT_MAP 每项的动画 index + 默认动画(work coding)
+    for (int k = 0; k < ACT_MAP_COUNT; k++) {
+        act_map_idx[k] = -1;
         for (int i = 0; i < SPLASH_ANIM_COUNT; i++) {
-            if (strcmp(splash_anims[i].name, ACT_ANIM_NAMES[k]) == 0) { act_anim[k] = (int8_t)i; break; }
+            if (strcmp(splash_anims[i].name, ACT_MAP[k].anim) == 0) { act_map_idx[k] = (int8_t)i; break; }
         }
+    }
+    act_default_idx = -1;
+    for (int i = 0; i < SPLASH_ANIM_COUNT; i++) {
+        if (strcmp(splash_anims[i].name, "work coding") == 0) { act_default_idx = (int8_t)i; break; }
     }
 }
 
@@ -209,9 +232,9 @@ void splash_next(void) {
 
 void splash_pick_for_current_rate(void) {
     if (SPLASH_ANIM_COUNT == 0) return;
-    // 工作状态优先：用固定专属动画（准确，不在组内轮换）。
-    if (s_act_group >= 0 && s_act_group < 3 && act_anim[s_act_group] >= 0) {
-        cur_anim = (uint16_t)act_anim[s_act_group];
+    // 工作状态优先：用 label 映射的固定专属动画（准确，不在组内轮换）。
+    if (act_cur_idx >= 0) {
+        cur_anim = (uint16_t)act_cur_idx;
         cur_frame = 0;
         frame_started_ms = millis();
         last_pick_ms = frame_started_ms;
@@ -236,8 +259,14 @@ void splash_pick_for_current_rate(void) {
     render_frame(a->frames[0], a->palette);
 }
 
-// 由 Claude 工作状态设动画组：0=Idle(睡), 1=Thinking(思考), 2=调工具(活跃), -1=回退用量速率。
-void splash_set_activity_group(int g) { s_act_group = g; }
+// 由 Claude 工作状态(label) 设专属动画：查 ACT_MAP；未知工具→work coding；空 label→回退用量速率。
+void splash_set_activity(const char* label) {
+    if (!label || !label[0]) { act_cur_idx = -1; return; }
+    for (int k = 0; k < ACT_MAP_COUNT; k++) {
+        if (strcmp(label, ACT_MAP[k].label) == 0) { act_cur_idx = act_map_idx[k]; return; }
+    }
+    act_cur_idx = act_default_idx;   // 未列出的工具：当作在干活(coding)
+}
 
 bool splash_is_active(void) { return active; }
 
