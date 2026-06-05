@@ -30,6 +30,7 @@ static uint16_t cur_frame = 0;
 static uint32_t frame_started_ms = 0;
 static uint32_t last_pick_ms = 0;
 static bool active = false;
+static int  s_act_group = -1;   // >=0: 由 Claude 工作状态强制动画组(覆盖用量速率); -1: 回退用量速率
 
 // While splash is showing, auto-cycle to the next animation in the current
 // rate-driven group every this many ms.
@@ -197,7 +198,7 @@ void splash_next(void) {
 
 void splash_pick_for_current_rate(void) {
     if (SPLASH_ANIM_COUNT == 0) return;
-    int g = usage_rate_group();
+    int g = (s_act_group >= 0) ? s_act_group : usage_rate_group();  // Claude 工作状态优先于用量速率
     if (g < 0 || g >= GROUP_COUNT) g = 0;
     if (group_size[g] == 0) return;
 
@@ -213,6 +214,9 @@ void splash_pick_for_current_rate(void) {
     const splash_anim_def_t *a = &splash_anims[cur_anim];
     render_frame(a->frames[0], a->palette);
 }
+
+// 由 Claude 工作状态设动画组：0=Idle(睡), 1=Thinking(思考), 2=调工具(活跃), -1=回退用量速率。
+void splash_set_activity_group(int g) { s_act_group = g; }
 
 bool splash_is_active(void) { return active; }
 

@@ -22,6 +22,9 @@ void splash_hide(void);
 void splash_pick_for_current_rate(void);
 
 // True when splash is currently rendering (used to gate re-picks).
+// 由 Claude 工作状态(经 hook->sender->ui)强制动画组，覆盖用量速率。-1 恢复用量速率驱动。
+void splash_set_activity_group(int g);
+
 bool splash_is_active(void);
 
 // Root container (so ui.cpp can attach a click event).

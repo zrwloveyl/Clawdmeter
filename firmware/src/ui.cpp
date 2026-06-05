@@ -500,6 +500,15 @@ void ui_update(const UsageData* data) {
     lv_label_set_text(lbl_weekly_reset, buf);
 
     strlcpy(s_activity, data->activity, sizeof(s_activity));  // 缓存工作状态供底部状态行显示
+
+    // 工作状态 → splash 动画组：Idle=睡, Thinking=思考, 调工具=活跃（覆盖用量速率）
+    int ag;
+    if (s_activity[0] == 0)                       ag = -1;
+    else if (strcmp(s_activity, "Idle") == 0)     ag = 0;
+    else if (strcmp(s_activity, "Thinking") == 0) ag = 1;
+    else                                          ag = 2;
+    splash_set_activity_group(ag);
+    if (splash_is_active()) splash_pick_for_current_rate();
 }
 
 void ui_tick_anim(void) {
